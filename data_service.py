@@ -176,6 +176,55 @@ def fetch_usgs_data():
         st.error(f"Error fetching USGS data: {e}")
         return pd.DataFrame()
 
+
+# Function to fetch earthquake data from EMSC (European Mediterranean Seismological Centre)
+EMSC_API_URL = "https://www.seismicportal.eu/fdsnws/event/1/query"
+
+def fetch_emsc_data():
+    """Fetch earthquake data from EMSC for Italy - last 7 days."""
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=7)
+    params = {
+        "starttime": start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "endtime":   end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "minmagnitude": 1.0,
+        "maxlatitude": 48.0,
+        "minlatitude": 35.0,
+        "maxlongitude": 19.0,
+        "minlongitude": 6.0,
+        "format": "json",
+        "limit": 500,
+        "orderby": "time"
+    }
+    try:
+        headers = {"User-Agent": "EarthquakeMonitoringApp/1.0"}
+        response = requests.get(EMSC_API_URL, params=params, headers=headers, timeout=15)
+        if response.status_code != 200:
+            return pd.DataFrame()
+        data = response.json()
+        earthquakes = []
+        for event in data.get("features", []):
+            props = event.get("properties", {})
+            geo   = event.get("geometry", {})
+            coords = geo.get("coordinates", [0, 0, 0])
+            time_val = props.get("time", "")
+            if isinstance(time_val, (int, float)):
+                time_str = datetime.fromtimestamp(time_val/1000).strftime("%Y-%m-%dT%H:%M:%S")
+            else:
+                time_str = str(time_val)[:19]
+            earthquakes.append({
+                "time":      time_str,
+                "magnitude": props.get("mag", 0),
+                "depth":     coords[2] if len(coords) > 2 else 0,
+                "latitude":  coords[1] if len(coords) > 1 else 0,
+                "longitude": coords[0] if len(coords) > 0 else 0,
+                "location":  props.get("place", "Unknown"),
+                "source":    "EMSC"
+            })
+        return pd.DataFrame(earthquakes)
+    except Exception:
+        return pd.DataFrame()
+
 # Main function to fetch and combine earthquake data from all sources
 def fetch_earthquake_data():
     try:
@@ -186,16 +235,18 @@ def fetch_earthquake_data():
         # Set fetch status in debug info
         st.session_state['debug_info']['fetch_start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Fetch data from both sources
+        # Fetch data from all three sources
         ingv_data = fetch_ingv_data()
         usgs_data = fetch_usgs_data()
+        emsc_data = fetch_emsc_data()
 
         # Track data source counts
         st.session_state['debug_info']['ingv_count'] = len(ingv_data)
         st.session_state['debug_info']['usgs_count'] = len(usgs_data)
+        st.session_state['debug_info']['emsc_count'] = len(emsc_data)
 
         # Combine the data
-        combined_data = pd.concat([ingv_data, usgs_data], ignore_index=True)
+        combined_data = pd.concat([ingv_data, usgs_data, emsc_data], ignore_index=True)
         st.session_state['debug_info']['combined_count'] = len(combined_data)
 
         if not combined_data.empty:
@@ -232,16 +283,16 @@ def filter_area_earthquakes(df, area_name):
     # Define the geographical boundaries for each area
     area_bounds = {
         'vesuvio': {
-            'lat_min': 40.75, 'lat_max': 40.85,
-            'lon_min': 14.35, 'lon_max': 14.45
+            'lat_min': 40.70, 'lat_max': 40.95,
+            'lon_min': 14.25, 'lon_max': 14.65
         },
         'campi_flegrei': {
-            'lat_min': 40.80, 'lat_max': 40.90,
-            'lon_min': 14.05, 'lon_max': 14.20
+            'lat_min': 40.73, 'lat_max': 40.97,
+            'lon_min': 13.85, 'lon_max': 14.30
         },
         'ischia': {
-            'lat_min': 40.70, 'lat_max': 40.80,
-            'lon_min': 13.85, 'lon_max': 14.00
+            'lat_min': 40.62, 'lat_max': 40.88,
+            'lon_min': 13.75, 'lon_max': 14.10
         }
     }
 
