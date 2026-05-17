@@ -1153,11 +1153,11 @@ def calculate_risk_level(stats, area):
 
     # Enhanced magnitude risk calculation
     magnitude_threshold = 2.0 if area == "Campi Flegrei" else 2.5
-    risk_metrics['magnitude_risk'] = min((stats['max_magnitude'] - magnitude_threshold) / 3.0, 1.0)
+    risk_metrics['magnitude_risk'] = max(0.0, min((stats['max_magnitude'] - magnitude_threshold) / 3.0, 1.0))
 
     # Depth risk with area-specific weighting
     depth_weight = 1.5 if area == "Campi Flegrei" else 1.0
-    risk_metrics['depth_risk'] = min((20 - stats['avg_depth']) / 20 * depth_weight, 1.0)
+    risk_metrics['depth_risk'] = min(max(0.0, (20 - stats['avg_depth']) / 20 * depth_weight), 1.0)
 
     # Event frequency normalized by area
     frequency_threshold = 30 if area == "Campi Flegrei" else 20
