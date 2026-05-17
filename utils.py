@@ -60,9 +60,12 @@ import base64
 
 def render_svg(svg_file):
     try:
-        with open(svg_file, 'rb') as f:
-            svg_data = f.read()
-            b64_svg = base64.b64encode(svg_data).decode()
-            st.markdown(f'<img src="data:image/svg+xml;base64,{b64_svg}" width="100%" />', unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Impossibile caricare l'immagine {os.path.basename(svg_file)}")
+        st.image(svg_file)
+    except Exception:
+        try:
+            with open(svg_file, 'rb') as f:
+                svg_data = f.read()
+                b64_svg = base64.b64encode(svg_data).decode()
+                st.markdown(f'<img src="data:image/svg+xml;base64,{b64_svg}" width="100%" />', unsafe_allow_html=True)
+        except Exception as e:
+            pass  # SVG non disponibile, ignora silenziosamente
