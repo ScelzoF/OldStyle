@@ -614,16 +614,3 @@ if st.session_state.notification_enabled and st.session_state.earthquake_data is
         for _, eq in significant_eq.iterrows():
             st.toast(f"⚠️ {get_text('magnitude')}: {eq['magnitude']} - {eq['location']}")
 
-# Import the process_data function from monitoraggio
-from monitoraggio import process_data
-
-# Call the process_data function to display seismic monitoring data
-def main():
-    process_data()
-
-if __name__ == "__main__":
-    main()
-
-# Rimuoviamo la chiamata al meteo originale poiché l'abbiamo integrato
-# import meteo
-# meteo.show()
