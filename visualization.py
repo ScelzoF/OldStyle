@@ -573,7 +573,7 @@ def show_magnitude_time_chart(df, area, get_text):
         # Risk level gauge
         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
-            value = risk_metrics['event_frequency'] * 100,
+            value = round((risk_metrics.get('event_frequency', 0) + risk_metrics.get('magnitude_risk', 0) + risk_metrics.get('depth_risk', 0) + risk_metrics.get('clustering', 0)) / 4 * 100, 1),
             title = {'text': "Livello di Rischio"},
             gauge = {
                 'axis': {'range': [0, 100]},
