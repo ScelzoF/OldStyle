@@ -395,7 +395,7 @@ def show_map(df, area, get_text):
         zoom = 6
 
     # Create a folium map
-    m = folium.Map(location=center, zoom_start=zoom, tiles="CartoDB positron")
+    m = folium.Map(location=center, zoom_start=zoom, tiles="OpenStreetMap")
 
     # Add earthquake points to the map
     for _, row in df.iterrows():
