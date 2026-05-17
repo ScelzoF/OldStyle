@@ -44,12 +44,9 @@ st.set_page_config(
 )
 
 # Carica stile CSS personalizzato
-try:
-    css_path = os.path.join(os.path.dirname(__file__), 'style.css')
-    with open(css_path) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-except Exception:
-    pass
+css_path = os.path.join(os.path.dirname(__file__), 'streamlit', 'style.css')
+with open(css_path) as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # Initialize session state variables if they don't exist
 st.session_state.language = 'it'
