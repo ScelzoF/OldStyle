@@ -1,5 +1,7 @@
 import pandas as pd
 import requests
+import re
+import defusedxml.ElementTree as ET
 from datetime import datetime, timedelta
 import time
 import streamlit as st
@@ -10,6 +12,12 @@ INGV_API_URL = "https://webservices.ingv.it/fdsnws/event/1/query"
 
 # USGS API endpoint for worldwide earthquakes
 USGS_API_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+
+# EMSC API endpoint
+EMSC_API_URL = "https://www.seismicportal.eu/fdsnws/event/1/query"
+
+# GOSSIP-OV feed (rete locale OV - micro-eventi vulcani campani)
+GOSSIP_OV_URL = "https://terremoti.ov.ingv.it/gossip/report.xml"
 
 # Function to fetch earthquake data from INGV (Italian Geological Service)
 def fetch_ingv_data():
@@ -177,9 +185,7 @@ def fetch_usgs_data():
         return pd.DataFrame()
 
 
-# Function to fetch earthquake data from EMSC (European Mediterranean Seismological Centre)
-EMSC_API_URL = "https://www.seismicportal.eu/fdsnws/event/1/query"
-
+# Function to fetch earthquake data from EMSC
 def fetch_emsc_data():
     """Fetch earthquake data from EMSC for Italy - last 7 days."""
     end_time = datetime.utcnow()
@@ -225,6 +231,70 @@ def fetch_emsc_data():
     except Exception:
         return pd.DataFrame()
 
+
+def fetch_gossip_ov_data():
+    """
+    GOSSIP INGV OV — catalogo sismico rete locale vulcani campani.
+    Complementare a INGV FDSN: rileva micro-eventi non nel catalogo nazionale.
+    """
+    try:
+        # Try with verify=True first, fallback to verify=False for INGV cert issues
+        try:
+            resp = requests.get(
+                GOSSIP_OV_URL,
+                timeout=8,
+                headers={"User-Agent": "EarthquakeMonitoringApp/1.0"},
+                verify=True
+            )
+        except requests.exceptions.SSLError:
+            resp = requests.get(  # nosec B501
+                GOSSIP_OV_URL,
+                timeout=8,
+                headers={"User-Agent": "EarthquakeMonitoringApp/1.0"},
+                verify=False
+            )
+
+        if resp.status_code != 200 or len(resp.content) < 100:
+            return pd.DataFrame()
+
+        root = ET.fromstring(resp.text)
+        rows = []
+        for item in root.findall(".//item"):
+            title = (item.findtext("title") or "").strip()
+            desc  = (item.findtext("description") or "").strip()
+            pub   = (item.findtext("pubDate") or "").strip()
+
+            try:
+                from email.utils import parsedate_to_datetime as _p2d
+                dt_obj = _p2d(pub)
+                dt_str = dt_obj.strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                dt_str = pub
+
+            mag_m = re.search(r"magnitudo\s+(?:\w+\s*=\s*)?(\d+\.?\d*)", desc, re.I)
+            mag   = float(mag_m.group(1)) if mag_m else 0.0
+            lat_m = re.search(r"Lat:\s*([\d.]+)", desc)
+            lon_m = re.search(r"Lon:\s*([\d.]+)", desc)
+            dep_m = re.search(r"Profondità:\s*([\d.]+)", desc)
+            lat = float(lat_m.group(1)) if lat_m else None
+            lon = float(lon_m.group(1)) if lon_m else None
+            dep = float(dep_m.group(1)) if dep_m else 0.0
+
+            if lat and lon:
+                rows.append({
+                    "time":      dt_str,
+                    "magnitude": mag,
+                    "depth":     dep,
+                    "latitude":  lat,
+                    "longitude": lon,
+                    "location":  title.replace("\n", " ").strip(),
+                    "source":    "GOSSIP-OV",
+                })
+        return pd.DataFrame(rows) if rows else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
 # Main function to fetch and combine earthquake data from all sources
 def fetch_earthquake_data():
     try:
@@ -235,18 +305,20 @@ def fetch_earthquake_data():
         # Set fetch status in debug info
         st.session_state['debug_info']['fetch_start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Fetch data from all three sources
-        ingv_data = fetch_ingv_data()
-        usgs_data = fetch_usgs_data()
-        emsc_data = fetch_emsc_data()
+        # Fetch data from all four sources
+        ingv_data   = fetch_ingv_data()
+        usgs_data   = fetch_usgs_data()
+        emsc_data   = fetch_emsc_data()
+        gossip_data = fetch_gossip_ov_data()
 
         # Track data source counts
-        st.session_state['debug_info']['ingv_count'] = len(ingv_data)
-        st.session_state['debug_info']['usgs_count'] = len(usgs_data)
-        st.session_state['debug_info']['emsc_count'] = len(emsc_data)
+        st.session_state['debug_info']['ingv_count']   = len(ingv_data)
+        st.session_state['debug_info']['usgs_count']   = len(usgs_data)
+        st.session_state['debug_info']['emsc_count']   = len(emsc_data)
+        st.session_state['debug_info']['gossip_count'] = len(gossip_data)
 
-        # Combine the data
-        combined_data = pd.concat([ingv_data, usgs_data, emsc_data], ignore_index=True)
+        # Combine the data (INGV first for dedup priority)
+        combined_data = pd.concat([ingv_data, gossip_data, usgs_data, emsc_data], ignore_index=True)
         st.session_state['debug_info']['combined_count'] = len(combined_data)
 
         if not combined_data.empty:
@@ -261,6 +333,27 @@ def fetch_earthquake_data():
             combined_data = combined_data.dropna(subset=['datetime'])
 
             # Sort by datetime (most recent first)
+            combined_data = combined_data.sort_values(by='datetime', ascending=False)
+
+            # Deduplicate: same event within 60s, 0.3° lat/lon, 0.3 mag — keep INGV > GOSSIP-OV > USGS > EMSC
+            _src_order = {"INGV": 0, "GOSSIP-OV": 1, "USGS": 2, "EMSC": 3}
+            combined_data['_src_rank'] = combined_data['source'].map(lambda s: _src_order.get(s, 99))
+            combined_data = combined_data.sort_values(['_src_rank', 'datetime'], ascending=[True, False])
+
+            deduped = []
+            for _, row in combined_data.iterrows():
+                duplicate = False
+                for kept in deduped:
+                    if (abs(row['latitude']  - kept['latitude'])  < 0.3 and
+                        abs(row['longitude'] - kept['longitude']) < 0.3 and
+                        abs(row['magnitude'] - kept['magnitude']) < 0.3 and
+                        abs((row['datetime'] - kept['datetime']).total_seconds()) < 60):
+                        duplicate = True
+                        break
+                if not duplicate:
+                    deduped.append(row)
+
+            combined_data = pd.DataFrame(deduped).drop(columns=['_src_rank'], errors='ignore')
             combined_data = combined_data.sort_values(by='datetime', ascending=False)
 
             # Format the datetime for display
