@@ -1,9 +1,6 @@
-# 🌋 OldStyle — Versione Originale SeismicSafetyItalia
+# 🌋 SeismicSafetyItalia
 
-Archivio della versione originale dell'app di monitoraggio sismico per la Campania (Vesuvio, Campi Flegrei, Ischia).
-
-> ⚠️ Questa è la versione **storica/originale** — non viene aggiornata.  
-> Per la versione attuale con tutte le funzionalità aggiornate visita: [SeismicSafetyItalia](https://github.com/ScelzoF/SeismicSafetyItalia)
+Piattaforma interattiva basata su Streamlit per il monitoraggio sismico in tempo reale in Italia, con focus sulla zona Campania (Vesuvio, Solfatara).
 
 ## 🚀 Funzionalità principali
 
@@ -19,5 +16,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 👨‍💻 Ideato da Fabio Scelzo
-- meteotorre@gmail.com
+## 🌐 Deploy online
+
+- App: https://scelzof-seismicsafetyitalia.streamlit.app
+- Landing page: https://scelzof.github.io/SeismicSafetyItalia/
+
+## 🙌 Supporto
+
+Puoi supportare il progetto con una donazione:
+👉 [PayPal - meteotorre@gmail.com](https://www.paypal.com/donate/?business=meteotorre@gmail.com)
+
+---
+
+**Ideato da Fabio Scelzo**  
+📧 meteotorre@gmail.com
