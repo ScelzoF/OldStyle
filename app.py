@@ -44,7 +44,7 @@ st.set_page_config(
 )
 
 # Carica stile CSS personalizzato
-css_path = os.path.join(os.path.dirname(__file__), 'streamlit', 'style.css')
+css_path = os.path.join(os.path.dirname(__file__), 'style.css')
 with open(css_path) as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
