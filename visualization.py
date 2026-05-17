@@ -66,17 +66,20 @@ def _render_vesuvio_tab(earthquake_data, get_text):
 
     forecast_report = generate_forecast_report(vesuvio_data, "Vesuvio")
     st.subheader("⚠️ Previsioni Sismiche")
-    if forecast_report:
+    st_val = forecast_report.get('short_term_forecast') if forecast_report else None
+    mt_val = forecast_report.get('medium_term_forecast') if forecast_report else None
+    if forecast_report and st_val is not None and mt_val is not None:
         col_f1, col_f2 = st.columns(2)
         with col_f1:
-            st.metric("Previsione Breve Termine",
-                      f"{forecast_report['short_term_forecast']:.2f} M")
-            st.markdown(f"**Attendibilità**: {int(forecast_report['short_term_accuracy'] * 100)}%")
+            st.metric("Previsione Breve Termine", f"{st_val:.2f} M")
+            acc_st = forecast_report.get('short_term_accuracy') or 0
+            st.markdown(f"**Attendibilità**: {int(acc_st * 100)}%")
         with col_f2:
-            st.metric("Previsione Medio Termine",
-                      f"{forecast_report['medium_term_forecast']:.2f} M")
-            st.markdown(f"**Attendibilità**: {int(forecast_report['medium_term_accuracy'] * 100)}%")
-        st.caption(f"Ultimo aggiornamento: {forecast_report['last_update'].strftime('%d/%m/%Y %H:%M:%S')}")
+            st.metric("Previsione Medio Termine", f"{mt_val:.2f} M")
+            acc_mt = forecast_report.get('medium_term_accuracy') or 0
+            st.markdown(f"**Attendibilità**: {int(acc_mt * 100)}%")
+        if forecast_report.get('last_update'):
+            st.caption(f"Ultimo aggiornamento: {forecast_report['last_update'].strftime('%d/%m/%Y %H:%M:%S')}")
     else:
         st.info("Dati insufficienti per generare previsioni.")
 
@@ -136,12 +139,14 @@ def show_predictions_page(earthquake_data, get_text):
         st.markdown(f"### {area_name}")
         area_data = data_service.filter_area_earthquakes(earthquake_data, area_key)
         report = generate_forecast_report(area_data, area_name)
-        if report:
+        st_v = report.get('short_term_forecast') if report else None
+        mt_v = report.get('medium_term_forecast') if report else None
+        if report and st_v is not None and mt_v is not None:
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("Breve termine", f"{report['short_term_forecast']:.2f} M")
+                st.metric("Breve termine", f"{st_v:.2f} M")
             with col2:
-                st.metric("Medio termine", f"{report['medium_term_forecast']:.2f} M")
+                st.metric("Medio termine", f"{mt_v:.2f} M")
         else:
             st.info(f"Dati insufficienti per {area_name}.")
         st.divider()
