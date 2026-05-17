@@ -629,7 +629,7 @@ def show_magnitude_time_chart(df, area, get_text):
             # Historical risk based on actual data
             daily_count = stats['daily_counts'].get(str(date.date()), 0)
             if daily_count == 0:
-                risk = 0.05 if is_today else 0  # oggi sempre visibile
+                risk = 0
             elif daily_count < 3:
                 risk = 0.3
             elif daily_count < 5:
@@ -642,11 +642,10 @@ def show_magnitude_time_chart(df, area, get_text):
             base_risk = risk_metrics['event_frequency'] * (1 - days_diff/15)
             risk = max(0.1, min(0.9, base_risk + risk_metrics['acceleration'] * 0.2))
 
-        label = "🔴 OGGI" if is_today else get_risk_description(risk)
         calendar_data.append({
             'date': date.strftime('%Y-%m-%d'),
             'risk': risk,
-            'description': label
+            'description': get_risk_description(risk)
         })
 
     # Create interactive calendar heatmap with detailed tooltips
@@ -659,46 +658,30 @@ def show_magnitude_time_chart(df, area, get_text):
         z=[[d['risk'] for d in calendar_data]],
         customdata=[[d['description'] for d in calendar_data]],
         colorscale=[
-            [0, '#e8f5e9'],
+            [0, 'green'],
             [0.3, 'yellow'],
             [0.6, 'orange'],
             [1.0, 'red']
         ],
-        zmin=0, zmax=1,
         showscale=True,
         hoverongaps=False,
-        hovertemplate='Data: %{x}<br>Livello Rischio: %{z:.2f}<br>%{customdata}<extra></extra>'
+        hovertemplate='Data: %{x}<br>Livello Rischio: %{z:.2f}<extra></extra>'
     ))
 
-    # Linea verticale per "Oggi"
+    # Indicatore sottile per oggi (senza testo sovrapposto)
     fig.add_shape(
         type="line",
         x0=today_str, x1=today_str,
         y0=-0.5, y1=0.5,
-        line=dict(color="black", width=3, dash="solid"),
+        line=dict(color="black", width=2),
         xref="x", yref="y"
-    )
-    fig.add_annotation(
-        x=today_str,
-        y=0.5,
-        text="<b>OGGI</b>",
-        showarrow=False,
-        yshift=18,
-        font=dict(size=12, color="black"),
-        bgcolor="white",
-        bordercolor="black",
-        borderwidth=1
     )
 
     fig.update_layout(
-        title='Calendario del Rischio Sismico',
-        height=220,
+        title=f'Calendario del Rischio Sismico — Oggi: {today.strftime("%d %b %Y")}',
+        height=200,
         yaxis_showgrid=False,
-        xaxis_showgrid=True,
-        xaxis=dict(
-            tickformat='%d %b',
-            tickangle=-45,
-        )
+        xaxis_showgrid=True
     )
 
     st.plotly_chart(fig, use_container_width=True)
