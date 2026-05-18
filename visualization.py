@@ -686,14 +686,46 @@ def show_magnitude_time_chart(df, area, get_text):
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Calculate recent and older counts
-    recent_dates = [k for k in stats['daily_counts'].keys() 
-                   if pd.to_datetime(k) >= pd.Timestamp.now() - pd.Timedelta(days=3)]
+    # Calculate recent (last 3 days) and previous 3 days counts
+    recent_dates = [k for k in stats['daily_counts'].keys()
+                    if pd.to_datetime(k) >= pd.Timestamp.now() - pd.Timedelta(days=3)]
     recent_count = sum(stats['daily_counts'][k] for k in recent_dates)
 
-    older_dates = [k for k in stats['daily_counts'].keys() 
-                  if pd.to_datetime(k) < pd.Timestamp.now() - pd.Timedelta(days=3)]
-    older_count = sum(stats['daily_counts'][k] for k in older_dates)
+    prev3_dates = [k for k in stats['daily_counts'].keys()
+                   if pd.Timestamp.now() - pd.Timedelta(days=6) <= pd.to_datetime(k) < pd.Timestamp.now() - pd.Timedelta(days=3)]
+    prev3 = sum(stats['daily_counts'][k] for k in prev3_dates)
+
+    # Trend delta: same formula as main app (last3 vs prev3)
+    trend_delta_str = None
+    if prev3 > 0:
+        dp = round((recent_count - prev3) / prev3 * 100)
+        trend_delta_str = f"{'\u2191' if dp >= 0 else '\u2193'}{abs(dp)}%"
+
+    # Clustering: CoV-IET (Coefficient of Variation of Inter-Event Times)
+    # Same algorithm as main app: std(inter-event times) / mean(inter-event times)
+    # < 0.5 = regolare, ≈ 1.0 = Poisson, > 1.0 = clustering anomalo
+    cov_str = "N/D"
+    cov_delta = None
+    try:
+        _times = pd.to_datetime(df["datetime"]).sort_values()
+        _inter = _times.diff().dt.total_seconds().dropna()
+        _n = len(_inter)
+        if _n >= 2 and _inter.mean() > 0:
+            _cov = round(float(_inter.std()) / float(_inter.mean()), 2)
+            _cov = min(_cov, 9.99)
+            cov_str = f"{_cov:.2f}"
+            if _cov < 0.5:
+                cov_delta = "regolare"
+            elif _cov < 1.0:
+                cov_delta = "sub-Poisson"
+            elif _cov < 2.0:
+                cov_delta = "Poisson/lieve cluster"
+            else:
+                cov_delta = "\u26a0\ufe0f clustering"
+        elif _n == 1:
+            cov_str = "N/D (< 3 eventi)"
+    except Exception:
+        cov_str = "N/D"
 
     # Add trend indicators
     trend_cols = st.columns(3)
@@ -701,14 +733,15 @@ def show_magnitude_time_chart(df, area, get_text):
         st.metric(
             "Trend Eventi",
             f"{recent_count} eventi (3gg)",
-            f"{int((recent_count - older_count/2)*100)}%" if older_count > 0 else "N/A",
-            help="Confronto con la media dei giorni precedenti"
+            trend_delta_str,
+            help="Numero di eventi negli ultimi 3 giorni rispetto ai 3 giorni precedenti"
         )
     with trend_cols[1]:
         st.metric(
             "Indice di Clustering",
-            f"{risk_metrics['clustering']:.2f}",
-            help="Indica la concentrazione temporale degli eventi"
+            cov_str,
+            delta=cov_delta,
+            help="CoV-IET: < 0.5 regolare; ≈ 1.0 Poisson; > 1.0 clustering anomalo"
         )
     with trend_cols[2]:
         st.metric(
