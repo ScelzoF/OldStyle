@@ -57,6 +57,7 @@ def show_monitoring_page(earthquake_data, get_text):
 
         # Add real-time sensor data visualization
         st.subheader("📊 Dati dei sensori in tempo reale")
+        st.caption("ℹ️ Valori illustrativi — nella versione aggiornata dell'app i dati sono reali e provengono dai bollettini INGV OV.")
 
         sensor_cols = st.columns(3)
 
@@ -164,6 +165,7 @@ def show_monitoring_page(earthquake_data, get_text):
 
         # Add health and environmental data
         st.subheader("📊 Dati sanitari e ambientali")
+        st.caption("ℹ️ Dati indicativi, non provenienti da fonti sanitarie ufficiali — nella versione aggiornata dell'app trovi monitoraggio vulcanico completo con dati INGV OV reali.")
 
         health_cols = st.columns(3)
 
@@ -280,6 +282,7 @@ def show_monitoring_page(earthquake_data, get_text):
 
         # Add additional sensor visualizations
         st.subheader("📊 Monitoraggio Multiparametrico")
+        st.caption("ℹ️ Valori illustrativi — nella versione aggiornata dell'app i dati multiparametrici sono reali e provengono dai bollettini INGV OV.")
 
         # Create three columns for different sensor types
         sensor_cols = st.columns(3)
@@ -536,6 +539,7 @@ def show_magnitude_time_chart(df, area, get_text):
 
     # Add SAR Data Visualization
     st.subheader("📡 Dati SAR Sentinel-1")
+    st.caption("ℹ️ Visualizzazione illustrativa — nella versione aggiornata dell'app i parametri di deformazione provengono da GPS e bollettini INGV OV reali.")
 
     sar_cols = st.columns(2)
     with sar_cols[0]:
