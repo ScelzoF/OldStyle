@@ -399,6 +399,13 @@ def show_map(df, area, get_text):
 
     # Create a folium map
     m = folium.Map(location=center, zoom_start=zoom, tiles="OpenStreetMap")
+    # Forza apertura in nuova tab per i link Leaflet/OSM nell'attribution
+    m.get_root().html.add_child(folium.Element(
+        '<script>document.addEventListener("DOMContentLoaded",function(){'
+        'document.querySelectorAll(".leaflet-control-attribution a")'
+        '.forEach(function(a){a.setAttribute("target","_blank");});'
+        '});</script>'
+    ))
 
     # Add earthquake points to the map
     for _, row in df.iterrows():
