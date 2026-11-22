@@ -339,7 +339,7 @@ def extract_and_check_urls(text):
                     break
         
         except Exception as e:
-            logger.error(f"Errore nell'analisi dell'URL {url}: {e}")
+            logger.error("Evento di moderazione registrato")
     
     return suspicious_urls
 
@@ -349,7 +349,7 @@ def check_with_openai(text, user_id=None):
         return False, None
     
     try:
-        logger.info(f"Invio richiesta a OpenAI Moderation API per: '{text[:50]}...'")
+        logger.info("Evento di moderazione registrato")
         response = openai.Moderation.create(input=text)
         results = response["results"][0]
         
@@ -395,7 +395,7 @@ def check_phishing(text, user_id=None):
     for pattern in phishing_patterns:
         if re.search(pattern, text_lower):
             matches = re.findall(pattern, text_lower)
-            logger.info(f"Pattern di phishing rilevato: {matches}")
+            logger.info("Evento di moderazione registrato")
             # Incrementa il contatore di tentativi
             evasion_attempts[user_key]["count"] += 1
             evasion_attempts[user_key]["last_attempt"] = time.time()
@@ -404,7 +404,7 @@ def check_phishing(text, user_id=None):
     # Estrai e controlla URL
     suspicious_urls = extract_and_check_urls(text)
     if suspicious_urls:
-        logger.info(f"URL sospetti rilevati: {suspicious_urls}")
+        logger.info("Evento di moderazione registrato")
         evasion_attempts[user_key]["count"] += 1
         evasion_attempts[user_key]["last_attempt"] = time.time()
         return True, f"URL sospetto rilevato: {suspicious_urls[0][0]} - {suspicious_urls[0][1]}"
@@ -414,7 +414,7 @@ def check_phishing(text, user_id=None):
     matches = [word for word in phishing_keywords if word in text_lower.split() or f" {word} " in f" {text_lower} "]
     
     if len(matches) >= 2:  # Se ci sono almeno 2 parole chiave di phishing
-        logger.info(f"Parole chiave di phishing rilevate: {matches}")
+        logger.info("Evento di moderazione registrato")
         return True, f"Possibile tentativo di phishing: multipli indicatori ({', '.join(matches[:3])})"
     
     return False, None
@@ -433,7 +433,7 @@ def check_violent_content(text):
     
     # Se ci sono almeno 2 parole chiave relative alla violenza
     if len(matches) >= 2:
-        logger.info(f"Contenuto violento rilevato: {matches}")
+        logger.info("Evento di moderazione registrato")
         return True, f"Contenuto bloccato: potenziale contenuto violento o pericoloso ({', '.join(matches[:3])})"
     
     return False, None
@@ -448,18 +448,18 @@ def check_profanity(text):
     normalized_text = normalize_text(text_lower)
     
     # Debug per vedere cosa sta succedendo
-    logger.debug(f"Checking profanity for: '{text}' (normalized: '{normalized_text}')")
+    logger.debug("Evento di moderazione registrato")
     
     # 0. Controllo diretto sulla stringa originale (per maggiore sicurezza)
     for word in blacklist_words_it:
         if word in text_lower:
-            logger.info(f"Profanità rilevata (controllo diretto): '{word}' in '{text_lower}'")
+            logger.info("Evento di moderazione registrato")
             return True, f"Contenuto bloccato: uso di linguaggio inappropriato ('{word}')"
     
     # 1. Controllo con la blacklist personalizzata su testo normalizzato
     for word in blacklist_words_it:
         if word in normalized_text.split() or f" {word} " in f" {normalized_text} ":
-            logger.info(f"Profanità rilevata: parola in blacklist '{word}' in '{normalized_text}'")
+            logger.info("Evento di moderazione registrato")
             return True, f"Contenuto bloccato: uso di linguaggio inappropriato ('{word}')"
     
     # 2. Controllo pattern di evasione
@@ -467,7 +467,7 @@ def check_profanity(text):
         if re.search(pattern, normalized_text):
             match = re.search(pattern, normalized_text)
             matched_text = match.group(0) if match else pattern
-            logger.info(f"Profanità rilevata: pattern di evasione '{matched_text}' in '{normalized_text}'")
+            logger.info("Evento di moderazione registrato")
             return True, f"Contenuto bloccato: tentativo di eludere il filtro di moderazione"
     
     # 3. Controllo per parole di contesto problematiche
@@ -484,21 +484,21 @@ def check_profanity(text):
     # Se ci sono almeno 2 corrispondenze in una categoria specifica
     for category, matches in context_matches.items():
         if len(matches) >= 2:
-            logger.info(f"Contenuto sospetto rilevato: categoria {category}, parole {matches}")
+            logger.info("Evento di moderazione registrato")
             return True, f"Contenuto bloccato: linguaggio potenzialmente inappropriato ({category}: {', '.join(matches[:3])})"
     
     # 4. Controllo con better_profanity
     if profanity.contains_profanity(original_text):
-        logger.info(f"Profanità rilevata: rilevamento della libreria better_profanity nel testo '{original_text}'")
+        logger.info("Evento di moderazione registrato")
         return True, "Contenuto bloccato: uso di linguaggio inappropriato"
     
     # 5. Controllo ripetizioni e pattern
     has_repetition, repetition_reason = detect_repetition_patterns(original_text)
     if has_repetition:
-        logger.info(f"Pattern di ripetizione rilevato: {repetition_reason}")
+        logger.info("Evento di moderazione registrato")
         return True, f"Contenuto bloccato: {repetition_reason}"
     
-    logger.info(f"Nessuna profanità rilevata nel testo: '{original_text}'")
+    logger.info("Evento di moderazione registrato")
     return False, None
 
 # Funzione principale per filtrare i messaggi in arrivo
@@ -507,15 +507,15 @@ def filter_message(message, user_id=None, context=None):
         return "", None
     
     # Log di debug
-    logger.debug(f"Filtraggio messaggio: '{message[:100]}...' da utente: {user_id}" if len(message) > 100 else f"Filtraggio messaggio: '{message}' da utente: {user_id}")
-    print(f"[DEBUG] Filtraggio messaggio: '{message[:50]}...'" if len(message) > 50 else f"[DEBUG] Filtraggio messaggio: '{message}'")
+    logger.debug("Evento di moderazione registrato")
+    logger.debug("Evento di moderazione registrato")
     
     # VERIFICA BASE SEMPLICE E DIRETTA (massima priorità)
     # Controlla direttamente per contenuti offensivi senza normalizzazione
     for word in blacklist_words_it:
         if word in message.lower():
-            logger.warning(f"RAPIDO: Contenuto offensivo bloccato, contiene: {word}")
-            print(f"[DEBUG] Parola bloccata trovata: '{word}'")
+            logger.warning("Evento di moderazione registrato")
+            logger.debug("Evento di moderazione registrato")
             return "Questo messaggio è stato censurato per contenuti inappropriati.", {
                 "original": message,
                 "censored": profanity.censor(message),
@@ -539,14 +539,14 @@ def filter_message(message, user_id=None, context=None):
                 "category": "openai_moderation"
             }
     except Exception as e:
-        logger.error(f"Errore nel controllo OpenAI: {e}")
+        logger.error("Errore nel controllo di moderazione esterna")
         # Continua con i controlli locali
     
     # 1. Verifica phishing (priorità alta)
     is_phishing, phishing_reason = check_phishing(message, user_id)
     if is_phishing:
-        logger.warning(f"Tentativo di phishing bloccato: {phishing_reason}")
-        print(f"[DEBUG] Phishing bloccato: {phishing_reason}")
+        logger.warning("Evento di moderazione registrato")
+        logger.debug("Evento di moderazione registrato")
         return "Questo messaggio è stato bloccato perché potrebbe contenere un tentativo di phishing.", {
             "original": message,
             "reason": phishing_reason,
@@ -558,8 +558,8 @@ def filter_message(message, user_id=None, context=None):
     # 2. Verifica contenuti violenti (priorità alta)
     is_violent, violent_reason = check_violent_content(message)
     if is_violent:
-        logger.warning(f"Contenuto violento bloccato: {violent_reason}")
-        print(f"[DEBUG] Contenuto violento bloccato: {violent_reason}")
+        logger.warning("Evento di moderazione registrato")
+        logger.debug("Evento di moderazione registrato")
         return "Questo messaggio è stato bloccato perché potrebbe contenere riferimenti a violenza.", {
             "original": message,
             "reason": violent_reason,
@@ -570,7 +570,7 @@ def filter_message(message, user_id=None, context=None):
     
     # 3. Verifica profanità con better_profanity direttamente
     if profanity.contains_profanity(message):
-        logger.warning(f"Profanità diretta rilevata in: {message}")
+        logger.warning("Evento di moderazione registrato")
         print(f"[DEBUG] Profanità rilevata (better_profanity)")
         return "Questo messaggio è stato censurato per contenuti inappropriati.", {
             "original": message,
@@ -584,8 +584,8 @@ def filter_message(message, user_id=None, context=None):
     # 4. Verifica il contenuto con i filtri locali per profanità
     is_profane, profanity_reason = check_profanity(message)
     if is_profane:
-        logger.warning(f"Messaggio bloccato per profanità: {profanity_reason}")
-        print(f"[DEBUG] Profanità rilevata: {profanity_reason}")
+        logger.warning("Evento di moderazione registrato")
+        logger.debug("Evento di moderazione registrato")
         
         # Versione censurata del messaggio
         censored_message = profanity.censor(message)
@@ -613,12 +613,12 @@ def moderate_long_content(content, title=None, author_id=None):
     full_content = f"{title}: {content}" if title else content
     
     # Log di debug
-    logger.debug(f"Moderazione contenuto lungo: '{full_content[:100]}...' da autore: {author_id}" if len(full_content) > 100 else f"Moderazione contenuto lungo: '{full_content}' da autore: {author_id}")
+    logger.debug("Evento di moderazione registrato")
     
     # VERIFICA DIRETTA PER CONTENUTI OFFENSIVI
     for word in blacklist_words_it:
         if word in full_content.lower():
-            logger.warning(f"RAPIDO: Contenuto lungo con contenuto offensivo bloccato, contiene: {word}")
+            logger.warning("Evento di moderazione registrato")
             return "Questo contenuto è stato censurato per linguaggio inappropriato.", {
                 "reason": f"Linguaggio inappropriato ('{word}')",
                 "author_id": author_id,
