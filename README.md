@@ -21,10 +21,9 @@ streamlit run app.py
 - App: https://scelzof-seismicsafetyitalia.streamlit.app
 - Landing page: https://scelzof.github.io/SeismicSafetyItalia/
 
-## 🙌 Supporto
+## 🎁 Supporto
 
-Puoi supportare il progetto con una donazione:
-👉 [PayPal - meteotorre@gmail.com](https://www.paypal.com/donate/?business=meteotorre@gmail.com)
+Il nuovo collegamento per i regali è in aggiornamento. Il vecchio metodo è stato disattivato.
 
 ---
 
