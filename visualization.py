@@ -15,8 +15,6 @@ import data_service
 def show_monitoring_page(earthquake_data, get_text):
     import numpy as np
     st.header("📊 " + get_text('monitoring'))
-    st.sidebar.markdown("**🎁 Sostieni OldStyle**")
-    st.sidebar.link_button("PayPal.Me", "https://paypal.me/police73", type="secondary")
 
 
     # Check if we have data
