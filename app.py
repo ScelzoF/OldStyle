@@ -327,8 +327,6 @@ with st.sidebar:
     # Data source attribution
     st.caption(get_text('data_source'))
     
-    # Link di pagamento disattivato; nessuna CTA finché non esiste un collegamento regalo verificato.
-    st.caption("🎁 Link per i regali in aggiornamento.")
 
 # Main content area
 st.title("🌋 " + get_text('title'))
