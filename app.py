@@ -327,17 +327,8 @@ with st.sidebar:
     # Data source attribution
     st.caption(get_text('data_source'))
     
-    # Sezione donazione PayPal abbellita
-    st.markdown("---")
-    st.markdown("""
-    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #0070ba;">
-        <h3 style="color: #0070ba; margin-top: 0;">💖 Sostieni il Progetto</h3>
-        <p style="margin-bottom: 10px;">Se trovi utile questa applicazione, considera una piccola donazione per mantenere il servizio attivo e migliorarlo costantemente.</p>
-        <a href="https://www.paypal.com/donate/?business=meteotorre@gmail.com" style="display: inline-block; background-color: #0070ba; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-            ☕ Offrimi un caffè su PayPal
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+    # Link di pagamento disattivato; nessuna CTA finché non esiste un collegamento regalo verificato.
+    st.caption("🎁 Link per i regali in aggiornamento.")
 
 # Main content area
 st.title("🌋 " + get_text('title'))
