@@ -15,6 +15,7 @@ import data_service
 def show_monitoring_page(earthquake_data, get_text):
     import numpy as np
     st.header("📊 " + get_text('monitoring'))
+    st.sidebar.link_button("🎁 Sostieni OldStyle via PayPal.Me", "https://paypal.me/police73")
 
     # Check if we have data
     if earthquake_data is None or earthquake_data.empty:
