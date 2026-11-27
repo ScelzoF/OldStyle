@@ -1,0 +1,22 @@
+name: Keep OldStyle available
+
+on:
+  schedule:
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping OldStyle
+        run: |
+          curl --silent --show-error --location --max-time 20 \
+            --output /dev/null \
+            --write-out "HTTP %{http_code}\n" \
+            -H "User-Agent: Mozilla/5.0 (compatible; OldStyle-Keepalive/1.0)" \
+            https://sismoold.streamlit.app/
